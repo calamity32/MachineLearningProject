@@ -93,10 +93,11 @@ trainSubTest<- dataTrain[-subIndex, ]
 
 
 ## How I built the model
-For the model I am going to use a RandomForest. As I learned in this class, Random Forests often produce good predictive models, even if the choices they make can be hard to logically determine the reasoning behind them. They can also take a long time to run. I will keep the number of trees low (10 in this case) to keep run times down. 
+For the model I am going to use a RandomForest. As I learned in this class, Random Forests often produce good predictive models, even if the choices they make can be hard to logically determine the reasoning behind them. They can also take a long time to run. I will keep the number of trees low (10 in this case) to keep run times down. I split the training data further into training and test subsets (70/30 split) to use to train the model. I used cv with 10 folds in the creation of the model
 
 ```{r randomForest}
-modelRanFor <- train(classe ~., method='rf', data=trainSubTrain, ntree=10)
+
+modelRanFor <- train(classe ~., method='rf', data=trainSubTrain, ntree=10, trControl = trainControl(method = "cv", number = 10))
 predRanFor <- predict(modelRanFor, trainSubTest)
 
 RanForConMatrix <- confusionMatrix(predRanFor,trainSubTest$classe)
@@ -106,11 +107,12 @@ RanForConMatrix
 
 ## Expected sample error
 
-The expected sample error is 1-the accuracy. Even with running a Random Forest with only 10 trees, we got an accuracy of 98.7%. The expected error is then (1-.987)*100 = 1.3%
+The expected sample error is 1-the accuracy. Even with running a Random Forest with only 10 trees, we got an accuracy of 99%. The expected error is then (1-.99)*100 = 1%
+
 
 ## Results
 
-Overall 98.7% accuracy is very good and would only be improved with a larger number included in the random forest. For explanative purposes, it was easier to show how accurate the method could be with a lower number of trees and limited processing power and understanding the potential for greater accuracy with the change of one variable.
+Overall 99% accuracy is very good and would only be improved with a larger number included in the random forest. For explanative purposes, it was easier to show how accurate the method could be with a lower number of trees and limited processing power and understanding the potential for greater accuracy with the change of one variable.
 ***
 
 ## Predicting test cases
