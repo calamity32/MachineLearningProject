@@ -1,0 +1,124 @@
+---
+title: "Practical Machine Learning - Week 4 Project"
+output:
+  pdf_document: default
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+## By Jeff Gauzza
+
+# Background
+
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+* * *
+
+## Data 
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har
+
+## Load packages
+
+```{r load-packages, message = FALSE}
+library(caret)
+library(randomForest)
+```
+
+## Load the data
+First I will set the working directory, download the data and handle any NA or NULL values in the data
+
+```{r load-data}
+#Set working directory
+setwd("C:/Users/Jeff/Desktop/Coursera/ML")
+
+#delete old data
+rm(list = ls())
+
+#Download files & get date
+
+URLtrain <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+
+trainFile <- "pml-training.csv"
+
+if (!file.exists(trainFile)){download.file(URLtrain, destfile = trainFile, mode='wb')}
+
+URLtest <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+testFile <- "pml-testing.csv"
+
+if (!file.exists(testFile)){download.file(URLtest, destfile = testFile, mode='wb')}
+
+dataTrain = read.csv("pml-training.csv", header=TRUE, na.strings=c("NA","#DIV/0!", ""))
+dataTest = read.csv("pml-testing.csv", header=TRUE, na.strings=c("NA","#DIV/0!", ""))
+
+dateDownloaded <- date()
+
+head(dataTrain)
+head(dataTest)
+```
+## Clean data
+As you can see from display of the first few rows above, the first bunch of columns (user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, and num_window) are not needed and will be removed below from both the training and testing data.
+I will also remove variables which have a lot of NA values. I know I am going to do a RandomForest for my model and it does not do well with variables with many NA values.
+
+```{r clean-data}
+dataTrain <- dataTrain[,-c(1:7)]
+dataTest <- dataTest[,-c(1:7)]
+
+naIndex <- colSums(is.na(dataTrain))/nrow(dataTrain) < 0.95
+dataTrain <- dataTrain[,naIndex]
+
+```
+
+## Cross validation
+I further split the training data for cross validation purposes using a 70/30 split.
+
+```{r cv-split}
+subIndex <- createDataPartition(y=dataTrain$classe, p=0.70, list=FALSE)
+trainSubTrain <- dataTrain[subIndex, ] 
+trainSubTest<- dataTrain[-subIndex, ]
+
+```
+
+
+## How I built the model
+For the model I am going to use a RandomForest. As I learned in this class, Random Forests often produce good predictive models, even if the choices they make can be hard to logically determine the reasoning behind them. They can also take a long time to run. I will keep the number of trees low (10 in this case) to keep run times down. 
+
+```{r randomForest}
+modelRanFor <- train(classe ~., method='rf', data=trainSubTrain, ntree=10)
+predRanFor <- predict(modelRanFor, trainSubTest)
+
+RanForConMatrix <- confusionMatrix(predRanFor,trainSubTest$classe)
+RanForConMatrix
+
+```
+
+## Expected sample error
+
+The expected sample error is 1-the accuracy. Even with running a Random Forest with only 10 trees, we got an accuracy of 98.7%. The expected error is then (1-.987)*100 = 1.3%
+
+## Results
+
+Overall 98.7% accuracy is very good and would only be improved with a larger number included in the random forest. For explanative purposes, it was easier to show how accurate the method could be with a lower number of trees and limited processing power and understanding the potential for greater accuracy with the change of one variable.
+***
+
+## Predicting test cases
+
+Below is the predictions for the test set load at the beginning of the project. 
+```{r pred}
+finalPredictions <- predict(modelRanFor, dataTest)
+finalPredictions
+
+```
+
